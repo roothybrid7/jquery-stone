@@ -11,16 +11,27 @@ cookie, localstorageを併用する
 	* "none": onmemory only(force onmemory)
 	* "cookie": cookie
 	* "localstorage": localstorage
-* enableEngines
-   ["localstorage", "cookie"](default)
-* saveMode: fallback, all
+* enableEngines[default]
+   1. localstorage
+   2. cookie
+* saveMode: fallback[default], all
 * onmemory: true/false(storage cache)[default: true]
 
 ```Javascript
-$.stone({
-  enableEngines: ["localstorage", "cookie"],
+// Initialize.
+var store = $.stone({
+  enableEngines: ['localstorage', 'cookie'],
   saveMode: fallback,
   onMemory: true
+});
+
+var storeOnMemory = $.stone({
+    enableEngines: false,
+    onMemory: true
+});
+
+var $cookie = $.stone({
+    enableEngines: ['cookie']
 });
 
 // Interface.
