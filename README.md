@@ -8,9 +8,11 @@ cookie, localstorageを併用する
 
 ##Options
 * engine mode
-	* "none": onmemory only(force onmemory)
-	* "cookie": cookie
-	* "localstorage": localstorage
+    * "none": onmemory only(force onmemory)
+    * "cookie": cookie
+    * "localstorage": localstorage
+    * "sessionstorage"
+    * "document" jQuery[$(document).data()]
 * enableEngines[default]
    1. localstorage
    2. cookie
@@ -35,10 +37,10 @@ var $cookie = $.stone({
 });
 
 // Interface.
-$.stone.get('key', {refresh: true});
-$.stone.set('key', {'foo': 'bar'}, {force: 'cookie'});
-$.stone.flush();
-$.stone.remove('key');
+store.get('key', {refresh: true});
+store.set('key', {'foo': 'bar'}, {force: 'cookie'});
+store.flush();
+store.remove('key');
 ```
 
 Flow
