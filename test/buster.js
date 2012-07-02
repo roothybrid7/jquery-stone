@@ -11,7 +11,7 @@ config['Browser unit tests'] = {
     'lib/localstorage.js'
   ],
   tests: [
-    'test/unit/**/*.js'
+    'test/unit/**/*_test.js'
   ]
 };
 

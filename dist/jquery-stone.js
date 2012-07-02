@@ -43,7 +43,7 @@
    * @type {Object.<string,*>}
    */
   var defaults = {
-    scheme: 'jqstone',
+    dataScheme: 'jqstone',
 //    enableEngines: ['localstorage', 'cookie'],
     enableEngines: [],
     saveStrategy: 'fallback',
@@ -63,6 +63,7 @@
     this.options = $.extend({}, defaults, options);
     this._defaults = defaults;
     this._name = pluginName;
+    this._buffer = {};
     this.init();
   }
 
@@ -75,8 +76,16 @@
     },
     get: function(key, options) {
       // TODO: get item from storage.
-      var data = this.database.get.call(this, this.getDataUrl(key), options);
-      return data === undefined ? null : data;
+      var keyPath = this.getDataUrl(key),
+          data = null;
+
+      if (keyPath in this._buffer) {
+        data = this._buffer[keyPath];
+      } else {
+        data = this.database.get.call(this, keyPath, options);
+        this._buffer[keyPath] = data;
+      }
+      return data;
     },
     set: function(key, value, options) {
       // TODO: set item to storage.
@@ -85,18 +94,27 @@
        * localStorage: {value, timestamp}
        * cookie: {value, expires}
        */
-      return this.database.set.call(this, this.getDataUrl(key), value, options);
+      if (typeof value === 'undefined') return;
+      var keyPath = this.getDataUrl(key);
+      this.database.set.call(this, keyPath, value, options);
+      this._buffer[keyPath] = value;
+      return this;
     },
     remove: function(key, options) {
       // TODO: remove item from storage.
-      return this.database.remove.call(this, this.getDataUrl(key), options);
+      var keyPath = this.getDataUrl(key);
+      this.database.remove.call(this, keyPath, options);
+      delete this._buffer[keyPath];
+      return this;
     },
     clear: function() {
       // TODO: clear storage.
-      return this.database.clear.call(this, new RegExp(this.getDataUrl('')));
+      this.database.clear.call(this, new RegExp(this.getDataUrl('')));
+      this._buffer = {};
+      return this;
     },
     getDataUrl: function(key) {
-      return this.options.scheme + '://' + key;
+      return this.options.dataScheme + '://' + key;
     }
   };
 
@@ -148,7 +166,7 @@
   var pluginName = 'stone';
 
   // Register default engines.
-  $[pluginName].registerStorageEngine('localstorage', {
+  $[pluginName].registerStorageEngine('localStorage', {
     isAvailable: function() {
       try {
         return 'localStorage' in window && window['localStorage'] !== null;
@@ -157,16 +175,34 @@
       }
     },
     set: function(key, value, options) {
-      localStorage.setItem(key, value);
+      console.log('SET_LOC', value);
+      var data = JSON.stringify(value);
+      localStorage.setItem(key, data);
     },
     get: function(key, options) {
-      localStorage.getItem(key);
+      var data = localStorage.getItem(key),
+          parsedData = null;
+      try {
+        parsedData = JSON.parse(data);
+      } catch (ex) {
+        parsedData = null;
+      }
+      return parsedData;
     },
     remove: function(key, options) {
-      localStorage.remove(key);
+      localStorage.removeItem(key);
     },
     clear: function(pattern) {
-      localStorage.clear();
+      if (pattern) {
+        for (var i = 0, l = localStorage.length; i < l; i++) {
+          var key = localStorage.key(i);
+          if (key.match(pattern)) {
+            localStorage.removeItem(key);
+          }
+        }
+      } else {
+        localStorage.clear();
+      }
     }
   });
 
