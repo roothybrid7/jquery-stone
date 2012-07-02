@@ -12,7 +12,7 @@ module.exports = function(grunt) {
         ' Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %> */'
     },
     lint: {
-      files: ['grunt.js', 'lib/**/*.js', 'test/**/*.js']
+      files: ['grunt.js', 'lib/**/*.js', 'test/**/*_test.js']
     },
     qunit: {
       files: ['test/**/*.html']
@@ -22,7 +22,7 @@ module.exports = function(grunt) {
         src: [
           '<banner:meta.banner>',
           'lib/core.js',
-          'lib/*.js'
+          'lib/**/*.js'
         ],
         dest: 'dist/<%= pkg.name %>.js'
       }
@@ -41,7 +41,7 @@ module.exports = function(grunt) {
     },
     watch: {
       files: '<config:lint.files>',
-      tasks: 'cancat min growl:compileMessage'
+      tasks: 'concat min growl:compileMessage'
     },
     jshint: {
       options: {

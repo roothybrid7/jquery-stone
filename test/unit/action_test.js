@@ -59,8 +59,8 @@ buster.testCase("Stone storage action", {
     'set, get and remove data': function() {
       this.dummyStore.set('foo', 'bar');
       var ret_val = this.dummyStore.get('foo');
+      buster.log(ret_val);
       assert.equals('bar', ret_val);
-      assert.equals($(document).data(this.dummyStore.getDataUrl('foo')), ret_val);
       this.dummyStore.remove('foo');
       ret_val = this.dummyStore.get('foo');
       buster.log(ret_val);
