@@ -12,14 +12,19 @@ module.exports = function(grunt) {
         ' Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %> */'
     },
     lint: {
-      files: ['grunt.js', 'lib/**/*.js', 'test/**/*.js']
+      files: ['grunt.js', 'lib/**/*.js', 'test/**/*_test.js']
     },
     qunit: {
       files: ['test/**/*.html']
     },
     concat: {
       dist: {
-        src: ['<banner:meta.banner>', '<file_strip_banner:lib/<%= pkg.name %>.js>'],
+        src: [
+          '<banner:meta.banner>',
+          'lib/core.js',
+          'lib/formats/**/*.js',
+          'lib/**/*.js'
+        ],
         dest: 'dist/<%= pkg.name %>.js'
       }
     },
@@ -29,9 +34,15 @@ module.exports = function(grunt) {
         dest: 'dist/<%= pkg.name %>.min.js'
       }
     },
+    growl: {
+      compileMessage: {
+        message: 'Compiled!!',
+        title: 'Grunt compile'
+      }
+    },
     watch: {
       files: '<config:lint.files>',
-      tasks: 'lint qunit'
+      tasks: 'concat min growl:compileMessage'
     },
     jshint: {
       options: {
@@ -54,7 +65,9 @@ module.exports = function(grunt) {
     uglify: {}
   });
 
+  grunt.loadNpmTasks('grunt-growl');
+
   // Default task.
-  grunt.registerTask('default', 'lint qunit concat min');
+  grunt.registerTask('default', 'concat min growl:compileMessage');
 
 };
