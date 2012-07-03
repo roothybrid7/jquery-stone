@@ -28,9 +28,11 @@ buster.testCase("Stone storage action", {
         },
         get: function(key, options) {
           var data = $(document).data(key);
+          buster.log(key, data, typeof data === 'undefined');
           return (typeof data === 'undefined') ? null : data;
         },
         remove: function(key) {
+          buster.log($(document).data());
           $(document).removeData(key);
           return this;
         },

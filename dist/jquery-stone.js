@@ -1,4 +1,4 @@
-/*! jquery-stone - v0.0.0 - 2012-07-02
+/*! jquery-stone - v0.0.0 - 2012-07-03
 * Copyright (c) 2012 Satoshi Ohki; Licensed MIT, GPLv2 */
 
 /*!
@@ -59,21 +59,23 @@
       this.database = engines[engine];
     },
     get: function(key, options) {
-      // TODO: get item from storage.
       var opts = $.extend({}, options),
           keyPath = this.getDataUrl(key),
           data = null;
-
       if (keyPath in this._buffer) {
         data = this._buffer[keyPath];
       } else {
-        data = this.database.get.call(this, keyPath, opts);
-        if (this.database.deserialize) {
-          data = this.database.deserialize.call(this, data);
-        }
-        this._buffer[keyPath] = data;
+        data = this.database.get(keyPath, opts);
       }
-      return data && data.value;
+      if (data) {
+        if (data.timestamp && data.timestamp < Date.now()) {
+          this.database.remove(keyPath);
+          delete this._buffer[keyPath];
+        } else {
+          this._buffer[keyPath] = data;
+        }
+      }
+      return ($.isPlainObject(data) ? data.value : null);
     },
     /**
      * store key:value to storage.
@@ -101,28 +103,26 @@
         time.setTime(time.getTime() + expires);
         data.timestamp = time.getTime();
       }
-      if (this.database.serialize) {
-        data = this.database.serialize.call(this, data);
-      }
-      this.database.set.call(this, keyPath, data, opts);
-      delete this._buffer[keyPath];
+      this.database.set(keyPath, data, opts);
+      this._buffer[keyPath] = data; // Refresh cache.
       return this;
     },
     remove: function(key, options) {
       // TODO: remove item from storage.
       var keyPath = this.getDataUrl(key);
-      this.database.remove.call(this, keyPath, options);
+      this.database.remove(keyPath, options);
       delete this._buffer[keyPath];
       return this;
     },
     clear: function() {
       // TODO: clear storage.
-      this.database.clear.call(this, new RegExp(this.getDataUrl('')));
+      this.database.clear(new RegExp(this.getDataUrl('')));
       this._buffer = {};
       return this;
     },
     getDataUrl: function(key) {
-      return this.options.dataScheme + '://' + key;
+      var dataScheme = this.options.dataScheme;
+      return dataScheme ? (dataScheme + '://' + key) : key;
     }
   };
 
@@ -154,6 +154,113 @@
 }(jQuery, this));
 
 /*!
+ * json.js - JSON format functions.
+ */
+
+;(function($, global, undefined) {
+  'use strict';
+
+  var pluginName = 'stone',
+      module = {};
+
+  module.JsonFormat = {
+    /**
+     * Returns file extension.
+     * @return {string} File extension.
+     */
+    extension: function() {
+      return 'json';
+    },
+    /**
+     * Returns mime type.
+     * @return {string} Mime type.
+     */
+    mimeType: function() {
+      return 'application/json';
+    },
+    /**
+     * JSON encode.
+     * @param {*} data A encode target data.
+     * @param {...*} va_args encoder parameters.
+     * @return {*} The encoded data.
+     */
+    encode: function(data, va_args) {
+      if (typeof data === 'undefined' || data === null) {
+        return null;
+      }
+      if (typeof data === 'object' || typeof data === 'string') {
+        return JSON.stringify.apply(JSON, arguments);
+      }
+      return data;
+    },
+    /**
+     * JSON decode.
+     * @param {string} data A encoded data.
+     * @param {...*} va_args decoder parameters.
+     * @return {*} The decoded data.
+     */
+    decode: function(data, va_args) {
+      var parsedData = null;
+      try {
+        parsedData = JSON.parse.apply(JSON, arguments);
+      } catch (ex) {
+        parsedData = null;
+      }
+      return parsedData;
+    }
+  };
+  $.extend($[pluginName], module);
+}(jQuery, this));
+
+/*!
+ * uri.js - URI format functions.
+ */
+
+;(function($, global, undefined) {
+  'use strict';
+
+  var pluginName = 'stone',
+      module = {};
+
+  module.URIFormat = {
+    /**
+     * Returns file extension.
+     * @return {string} File extension.
+     */
+    extension: function() {
+      return null;
+    },
+    /**
+     * Returns mime type.
+     * @return {string} Mime type.
+     */
+    mimeType: function() {
+      return 'text/html';
+    },
+    /**
+     * URI encode.
+     * @param {*} data A encode target data.
+     * @return {*} The encoded data.
+     */
+    encode: function(data) {
+      if (typeof data === 'undefined' || data === null) {
+        return '';
+      }
+      return encodeURIComponent(data);
+    },
+    /**
+     * URI decode.
+     * @param {string} data A encoded data.
+     * @return {*} The decoded data.
+     */
+    decode: function(data) {
+      return decodeURIComponent(data);
+    }
+  };
+  $.extend($[pluginName], module);
+}(jQuery, this));
+
+/*!
  * cookie.js - cookie engine plugin.
  *
  * Copyright 2012, Satoshi Ohki.
@@ -163,45 +270,73 @@
 ;(function($, global, undefined) {
   'use strict';
 
-  var pluginName = 'stone';
+  var pluginName = 'stone',
+      pluginNs = $[pluginName];
 
   // Register default engines.
-  $[pluginName].registerStorageEngine('cookie', {
+  pluginNs.registerStorageEngine('cookie', {
     isAvailable: function() {
       return 'cookie' in document;
     },
-    set: function(key, value, options) {
-      var data = JSON.stringify(value);
-      localStorage.setItem(key, data);
+    _setCookie: function(key, data, options) {
+      return (document.cookie = [
+        encodeURIComponent(key), '=',
+        options.raw ? data : encodeURIComponent(data),
+        options.expires ? '; expires=' + options.expires : '',
+        options.path ? '; path=' + options.path : '',
+        options.domain ? '; domain=' + options.domain : '',
+        options.secure ? '; secure' : ''
+      ].join(''));
+    },
+    // value: {value: [data], timestamp: [timestamp]}
+    set: function(key, data, options) {
+      var opts = $.extend({}, options),
+          value = data.value,
+          timestamp = data.timestamp;
+      if (typeof data === 'undefined' || data === null) {
+        opts.expires = -1;  // invalidate.
+      }
+      if (timestamp) {
+        opts.expires = new Date(timestamp).toUTCString();
+      }
+      return this._setCookie(key, data, opts);
     },
     get: function(key, options) {
-      var data = localStorage.getItem(key),
-          parsedData = null;
-      try {
-        parsedData = JSON.parse(data);
-      } catch (ex) {
-        parsedData = null;
+      var opts = $.extend({}, options);
+      var exp = new RegExp('(?:^|; )' + encodeURIComponent(key) + '=([^;]*)'),
+          result = exp.exec(document.cookie);
+      if (result) {
+        var data = (opts.raw ? result[1] : decodeURIComponent(result[1]));
+        if (data === 'null') {
+          data = null;
+        } else if (data === 'true' || data === 'false') {
+          data = Boolean(data);
+        }
+        return data;
+      } else {
+        return null;
       }
-      return parsedData;
     },
     remove: function(key, options) {
-      localStorage.removeItem(key);
+      var opts = $.extend({}, options);
+      opts.expires = -1;
+      this._setCookie(key, null, opts);
     },
     clear: function(pattern) {
-      if (pattern) {
-        for (var i = 0, l = localStorage.length; i < l; i++) {
-          var key = localStorage.key(i);
+      var cookies = document.cookie.split('; '),
+          length = cookies.length;
+      for (var i = 0; i < length; i++) {
+        var key = cookies[i].split('=')[0];
+        if (pattern) {
           if (key.match(pattern)) {
-            localStorage.removeItem(key);
+            this.remove(key);
           }
+        } else {
+          this.remove(keyValue[0]);
         }
-      } else {
-        localStorage.clear();
       }
     }
   });
-
-  return $;
 }(jQuery, this));
 
 /*!
@@ -214,10 +349,11 @@
 ;(function($, global, undefined) {
   'use strict';
 
-  var pluginName = 'stone';
+  var pluginName = 'stone',
+      pluginNs = $[pluginName];
 
   // Register default engines.
-  $[pluginName].registerStorageEngine('localStorage', {
+  pluginNs.registerStorageEngine('localStorage', {
     isAvailable: function() {
       try {
         return 'localStorage' in window && window['localStorage'] !== null;
@@ -225,29 +361,18 @@
         return false;
       }
     },
-    serialize: function(data) {
-      if (typeof data === 'undefined' || data === null) {
-        return null;
-      }
-      if (typeof data === 'object' || typeof data === 'string') {
-        return JSON.stringify(data);
-      }
-      return data;
-    },
-    deserialize: function(data) {
-      var parsedData = null;
-      try {
-        parsedData = JSON.parse(data);
-      } catch (ex) {
-        parsedData = null;
-      }
-      return parsedData;
-    },
     set: function(key, value, options) {
-      localStorage.setItem(key, value);
+      var data = pluginNs.JsonFormat.encode(value);
+      localStorage.setItem(key, data);
     },
     get: function(key, options) {
-      return localStorage.getItem(key);
+      var opts = $.extend({}, options),
+          data = localStorage.getItem(key);
+      if (data) {
+        return (opts.raw ? data : pluginNs.JsonFormat.decode(data));
+      } else {
+        return null;
+      }
     },
     remove: function(key, options) {
       localStorage.removeItem(key);
@@ -256,7 +381,7 @@
       if (pattern) {
         for (var i = 0, l = localStorage.length; i < l; i++) {
           var key = localStorage.key(i);
-          if (key.match(pattern)) {
+          if (key && key.match(pattern)) {
             localStorage.removeItem(key);
           }
         }
@@ -265,6 +390,4 @@
       }
     }
   });
-
-  return $;
 }(jQuery, this));

@@ -22,6 +22,7 @@ module.exports = function(grunt) {
         src: [
           '<banner:meta.banner>',
           'lib/core.js',
+          'lib/formats/**/*.js',
           'lib/**/*.js'
         ],
         dest: 'dist/<%= pkg.name %>.js'

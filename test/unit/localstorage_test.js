@@ -13,123 +13,84 @@ buster.testCase("Stone localStorage", {
     this.DEFS = $.stone._defaults();
     this.origDocumentData = $(document).data();
     this.locStorage = $.stone.create({enableEngines: ['localStorage']});
+    this.locUtils = $.stone.availableEngines()['localStorage'];
+    this.timestamp = new Date(Date.now() + 86400 * 1000).getTime();
   },
   tearDown: function() {
     $(document).data(this.origDocumentData);
+    this.locUtils.clear(new RegExp('test_'));
+    this.locStorage.clear();
     this.locStorage = null;
   },
-  'serialize deserialize': {
-    setUp: function() {
-      this.serializeEngine = $.stone.availableEngines()['localStorage'];
-    },
-    tearDown: function() {
-      this.serializeEngine = null;
-    },
-    'undefined': function() {
-      var data = undefined,
-          encodedData = this.serializeEngine.serialize(data);
-      assert.isNull(encodedData);
-    },
-    'null': function() {
-      var data = null;
-      console.log(data, typeof data);
-      var encodedData = this.serializeEngine.serialize(data);
-      assert.isNull(encodedData);
-    },
-    'true/false': function() {
-      var dataTrue = true,
-          dataFalse = false,
-          encodedDataTrue = this.serializeEngine.serialize(dataTrue),
-          encodedDataFalse = this.serializeEngine.serialize(dataFalse);
-      assert.same(true, encodedDataTrue);
-      assert.same(false, encodedDataFalse);
-    },
-    'string': function() {
-      var data = 'a',
-          encodedData = this.serializeEngine.serialize(data);
-      assert(typeof encodedData === 'string');
-      var decodedData = this.serializeEngine.deserialize(encodedData);
-      assert.equals(data, decodedData);
-    },
-    'Object': function() {
-      var data = {a:0, b:1, c:null, d:'abc', e: {f: 'g'}, h: false},
-          encodedData = this.serializeEngine.serialize(data);
-      assert(typeof encodedData === 'string');
-      var decodedData = this.serializeEngine.deserialize(encodedData);
-      assert.equals(data, decodedData);
-    },
-    'Array': function() {
-      var data = [0,1,{id:1, data:'text'},{id:2, data:'text2'}],
-          encodedData = this.serializeEngine.serialize(data);
-      assert(typeof encodedData === 'string');
-      var decodedData = this.serializeEngine.deserialize(encodedData);
-      assert.equals(data, decodedData);
-    }
+  'enableEngines': function() {
+    var opts = this.locStorage.options;
+    assert.equals('localStorage', opts.enableEngines[0]);
   },
-  '//set, get and remove null, undefined illigal': function() {
-    this.locStorage.set('nu', null);
-    this.locStorage.set('undef', undefined);
-    buster.log(this.locStorage.get('nu'));
-    buster.log(this.locStorage.get('undef'));
-    assert.isNull(this.locStorage.get('nu'));
-    assert.isNull(this.locStorage.get('undef'));
-    this.locStorage.remove('nu');
-    this.locStorage.remove('undef');
+  'set, get and remove value': function() {
+    var a = {value: 'a', timestamp: this.timestamp},
+        num0 = {value: 0, timestamp: this.timestamp},
+        num0_01 = {value: 0.01, timestamp: this.timestamp};
+    this.locUtils.set('test_a', a);
+    this.locUtils.set('test_d', num0);
+    this.locUtils.set('test_f', num0_01);
+    var ret_a = this.locUtils.get('test_a');
+    var ret_num0 = this.locUtils.get('test_d');
+    var ret_num0_01 = this.locUtils.get('test_f');
+    buster.log('a=',ret_a,'num0=',ret_num0,'num0_01=',ret_num0_01);
+    assert.equals(a, ret_a);
+    assert.equals(num0, ret_num0);
+    assert.equals(num0_01, ret_num0_01);
+    this.locUtils.remove('test_a');
+    this.locUtils.remove('test_d');
+    this.locUtils.remove('test_f');
+    assert.isNull(this.locUtils.get('test_a'));
+    assert.isNull(this.locUtils.get('test_d'));
+    assert.isNull(this.locUtils.get('test_f'));
   },
-  '//set, get and remove string': function() {
-    this.locStorage.set('foo', 'bar');
-    var ret_val = this.locStorage.get('foo');
-    buster.log(ret_val);
-    assert.equals('bar', ret_val);
-    this.locStorage.remove('foo');
-    ret_val = this.locStorage.get('foo');
-    assert.isNull(ret_val);
+  'set, get and remove object': function() {
+    var T = {value: true, timestamp: this.timestamp},
+        F = {value: false, timestamp: this.timestamp},
+        obj = {value: {a:1,b:{c:2, data: [1,2,3]}}, timestamp: this.timestamp},
+        arr = {value: [1,'b',3, {id: 1, text: 'a'}], timestamp: this.timestamp};
+    this.locUtils.set('test_T', T);
+    this.locUtils.set('test_F', F);
+    this.locUtils.set('test_obj', obj);
+    this.locUtils.set('test_arr', arr);
+    var ret_T = this.locUtils.get('test_T');
+    var ret_F = this.locUtils.get('test_F');
+    var ret_obj = this.locUtils.get('test_obj');
+    var ret_arr = this.locUtils.get('test_arr');
+    assert.equals(T, ret_T);
+    assert.equals(F, ret_F);
+    assert.equals(obj, ret_obj);
+    assert.equals(arr, ret_arr);
+    this.locUtils.remove('test_T');
+    this.locUtils.remove('test_F');
+    this.locUtils.remove('test_obj');
+    this.locUtils.remove('test_arr');
+    assert.isNull(this.locUtils.get('test_T'));
+    assert.isNull(this.locUtils.get('test_F'));
+    assert.isNull(this.locUtils.get('test_obj'));
+    assert.isNull(this.locUtils.get('test_arr'));
   },
-  '//set, get and remove number': function() {
-    var num0 = 0, num1 = 1, num0_01 = 0.01;
-    this.locStorage.set('foo_num0', num0);
-    this.locStorage.set('foo_num1', num1);
-    this.locStorage.set('foo_num0_01', num0_01);
-    var ret_vals = [];
-    ret_vals.push(this.locStorage.get('foo_num0'));
-    ret_vals.push(this.locStorage.get('foo_num1'));
-    ret_vals.push(this.locStorage.get('foo_num0_01'));
-    assert.equals(num0, ret_vals[0]);
-    assert.equals(num1, ret_vals[1]);
-    assert.equals(num0_01, ret_vals[2]);
-    this.locStorage.remove('foo_num0');
-    this.locStorage.remove('foo_num1');
-    this.locStorage.remove('foo_num0_01');
-    assert.isNull(this.locStorage.get('foo_num0'));
-    assert.isNull(this.locStorage.get('foo_num1'));
-    assert.isNull(this.locStorage.get('foo_num0_01'));
-  },
-  '//set, get and remove array': function() {
-    var arr = [1,'two','three', 4];
-    this.locStorage.set('foo_arr', arr);
-    var ret_val = this.locStorage.get('foo_arr');
-    assert.equals(arr, ret_val);
-    this.locStorage.remove('foo_arr');
-    ret_val = this.locStorage.get('foo_arr');
-    assert.isNull(ret_val);
-  },
-  '//set, get and remove object literal': function() {
-    var obj = {a: 'foo', b: 2, c: 'buz'};
-    this.locStorage.set('foo_obj', obj);
-    var ret_val = this.locStorage.get('foo_obj');
-    assert.equals(obj, ret_val);
-    this.locStorage.remove('foo_obj');
-    ret_val = this.locStorage.get('foo_obj');
-    assert.isNull(ret_val);
-  },
-  '//set, get and remove recursive': function() {
-    var data = [{id:1, text:'first text'}, {id:2, text:'second text'}];
-    this.locStorage.set('foo_recur', data);
-    var ret_val = this.locStorage.get('foo_recur');
-    assert.equals(data, ret_val);
-    this.locStorage.remove('foo_recur');
-    ret_val = this.locStorage.get('foo_recur');
-    assert.isNull(ret_val);
+  'set, get and remove value by Stone instance': function() {
+    var a = 'a', num0 = 0, num0_01 = 0.01;
+    this.locStorage.set('loc_a', a);
+    this.locStorage.set('loc_num0', num0);
+    this.locStorage.set('loc_num0_01', num0_01);
+    var ret_a = this.locStorage.get('loc_a');
+    var ret_num0 = this.locStorage.get('loc_num0');
+    var ret_num0_01 = this.locStorage.get('loc_num0_01');
+    buster.log('a=',ret_a, 'num0=',ret_num0, 'num0_01=',ret_num0_01);
+    assert.equals(a, ret_a);
+    assert.equals(num0, ret_num0);
+    assert.equals(num0_01, ret_num0_01);
+    this.locStorage.remove('loc_a');
+    this.locStorage.remove('loc_num0');
+    this.locStorage.remove('loc_num0_01');
+    assert.isNull(this.locStorage.get('loc_a'));
+    assert.isNull(this.locStorage.get('loc_num0'));
+    assert.isNull(this.locStorage.get('loc_num0_01'));
   }
 });
 
