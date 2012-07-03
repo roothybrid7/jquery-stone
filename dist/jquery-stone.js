@@ -1,11 +1,9 @@
 /*! jquery-stone - v0.0.0 - 2012-07-03
+* https://github.com/roothybrid7/jquery-stone
 * Copyright (c) 2012 Satoshi Ohki; Licensed MIT, GPLv2 */
 
 /*!
  * core.js - DOM Storage library core script.
- *
- * Copyright 2012, Satoshi Ohki.
- * Dual licensed under the MIT or GPL Version 2 licenses.
  */
 
 ;(function($, global, undefined) {
@@ -262,9 +260,6 @@
 
 /*!
  * cookie.js - cookie engine plugin.
- *
- * Copyright 2012, Satoshi Ohki.
- * Dual licensed under the MIT or GPL Version 2 licenses.
  */
 
 ;(function($, global, undefined) {
@@ -341,9 +336,6 @@
 
 /*!
  * localstorage.js - localstorage engine plugin.
- *
- * Copyright 2012, Satoshi Ohki.
- * Dual licensed under the MIT or GPL Version 2 licenses.
  */
 
 ;(function($, global, undefined) {

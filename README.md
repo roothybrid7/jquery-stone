@@ -5,6 +5,17 @@ cookie, localstorageを併用する
 * Storage engine(localstorage, sessionStorage等)を組み込み拡張できるようにする
 * 既存のライブラリだと、データの保存がfallbackのものが多いので、有効にしたstorage engineすべてに保存できるようにする
 
+##Scripts
+
+Uncompressed
+
+    dist/jquery-stone.js
+
+Minify
+
+    dist/jquery-stone.min.js
+
+--------
 
 ##Options
 * engine mode
