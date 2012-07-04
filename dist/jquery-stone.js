@@ -125,13 +125,18 @@
      */
     clear: function() {
       // TODO: clear storage.
-      this.database && this.database.clear(new RegExp(this.getDataUrl('')));
+      var dataUrl = this.getDataUrl(''),
+          pattern = dataUrl ? new RegExp(dataUrl) : null;
+      this.database && this.database.clear(pattern);
       this._buffer = {};
       return this;
     },
     getDataUrl: function(key) {
       var dataScheme = this.options.dataScheme;
       return dataScheme ? (dataScheme + '://' + key) : key;
+    },
+    _dumpCache: function() {
+      return this._buffer;
     }
   };
 
@@ -336,11 +341,15 @@
     },
     clear: function(pattern) {
       if (pattern) {
+        var keys = [];
         for (var i = 0, l = localStorage.length; i < l; i++) {
           var key = localStorage.key(i);
           if (key && key.match(pattern)) {
-            localStorage.removeItem(key);
+            keys.push(key);
           }
+        }
+        for (var i = 0, l = keys.length; i < l; i++) {
+          localStorage.removeItem(keys[i]);
         }
       } else {
         localStorage.clear();
