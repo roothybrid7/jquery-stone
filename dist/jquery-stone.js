@@ -1,4 +1,4 @@
-/*! jquery-stone - v0.0.0 - 2012-07-04
+/*! jquery-stone - v0.0.0 - 2012-07-05
 * https://github.com/roothybrid7/jquery-stone
 * Copyright (c) 2012 Satoshi Ohki; Licensed MIT, GPLv2 */
 
@@ -74,6 +74,7 @@
         if (data.timestamp && data.timestamp < Date.now()) {
           this.database.remove(keyPath);
           delete this._buffer[keyPath];
+          data = null;
         } else {
           this._buffer[keyPath] = data;
         }
