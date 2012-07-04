@@ -24,9 +24,12 @@ buster.testCase("Stone Register Storage engines", {
         }
       });
       var engines = $[this.PLUGIN_NAME].availableEngines();
-      assert('dummyStorage' in engines);
+      buster.log(engines);
+      assert($.inArray('dummyStorage', engines) >= 0);
       $[this.PLUGIN_NAME].unregisterStorageEngine('dummyStorage');
-      refute('dummyStorage' in engines);
+      var engines = $[this.PLUGIN_NAME].availableEngines();
+      buster.log(engines);
+      assert($.inArray('dummyStorage', engines) === -1);
     },
     'cannot register unavailableEngine': function() {
       $[this.PLUGIN_NAME].registerStorageEngine('dummyStorage', {
@@ -35,7 +38,8 @@ buster.testCase("Stone Register Storage engines", {
         }
       });
       var engines = $[this.PLUGIN_NAME].availableEngines();
-      refute('dummyStorage' in engines);
+      buster.log(engines);
+      assert($.inArray('dummyStorage', engines) === -1);
     }
-  },
+  }
 });

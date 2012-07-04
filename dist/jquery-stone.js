@@ -1,4 +1,4 @@
-/*! jquery-stone - v0.0.0 - 2012-07-03
+/*! jquery-stone - v0.0.0 - 2012-07-04
 * https://github.com/roothybrid7/jquery-stone
 * Copyright (c) 2012 Satoshi Ohki; Licensed MIT, GPLv2 */
 
@@ -9,8 +9,7 @@
 ;(function($, global, undefined) {
   'use strict';
 
-  var pluginName = 'stone',
-      version = '0.0.0';
+  var pluginName = 'stone';
 
   /**
    * Plugin default parameters.
@@ -21,7 +20,7 @@
    */
   var defaults = {
     dataScheme: 'jqstone',
-//    enableEngines: ['localstorage', 'cookie'],
+//    enableEngines: ['localStorage', 'cookie'],
     enableEngines: [],
     saveStrategy: 'fallback',
     syncBufferLimit: 0,  // 0: realtime[default]
@@ -56,13 +55,19 @@
       var engine = this.options.enableEngines[0];
       this.database = engines[engine];
     },
+    /**
+     * get value by key from buffer cache or storage.
+     * @param {string} key The stored key.
+     * @param {Object.<string,*>=} options The plugin and storage options.
+     * @return {*} stored value.
+     */
     get: function(key, options) {
       var opts = $.extend({}, options),
           keyPath = this.getDataUrl(key),
           data = null;
       if (keyPath in this._buffer) {
         data = this._buffer[keyPath];
-      } else {
+      } else if (this.database) {
         data = this.database.get(keyPath, opts);
       }
       if (data) {
@@ -87,8 +92,6 @@
     set: function(key, value, options) {
       /*!
        * {value, expires || timestamp, [path, domain, secure]}
-       * localStorage: {value, timestamp}
-       * cookie: {value, expires}
        */
       var opts = $.extend({}, options),
           keyPath = this.getDataUrl(key),
@@ -101,20 +104,28 @@
         time.setTime(time.getTime() + expires);
         data.timestamp = time.getTime();
       }
-      this.database.set(keyPath, data, opts);
+      this.database && this.database.set(keyPath, data, opts);
       this._buffer[keyPath] = data; // Refresh cache.
       return this;
     },
+    /**
+     * Remove value from storage and cache by key.
+     * @param {string} key The stored key.
+     * @param {Object.<string,*>=} options The plugin and storage options.
+     */
     remove: function(key, options) {
       // TODO: remove item from storage.
       var keyPath = this.getDataUrl(key);
-      this.database.remove(keyPath, options);
+      this.database && this.database.remove(keyPath, options);
       delete this._buffer[keyPath];
       return this;
     },
+    /**
+     * Clear values in storage and cache.
+     */
     clear: function() {
       // TODO: clear storage.
-      this.database.clear(new RegExp(this.getDataUrl('')));
+      this.database && this.database.clear(new RegExp(this.getDataUrl('')));
       this._buffer = {};
       return this;
     },
@@ -128,14 +139,14 @@
    * Plugin functions.
    */
   $[pluginName] = {
-    _version: function() {
-      return version;
-    },
     _defaults: function() {
       return defaults;
     },
-    availableEngines: function() {
+    _getEngines: function() {
       return engines;
+    },
+    availableEngines: function() {
+      return $.map(engines, function(v, k) { return k; });
     },
     unregisterStorageEngine: function(name) {
       delete engines[name];
@@ -276,7 +287,7 @@
     _setCookie: function(key, data, options) {
       return (document.cookie = [
         encodeURIComponent(key), '=',
-        options.raw ? data : encodeURIComponent(data),
+        encodeURIComponent(data),
         options.expires ? '; expires=' + options.expires : '',
         options.path ? '; path=' + options.path : '',
         options.domain ? '; domain=' + options.domain : '',
@@ -288,12 +299,13 @@
       var opts = $.extend({}, options),
           value = data.value,
           timestamp = data.timestamp;
-      if (typeof data === 'undefined' || data === null) {
+      if (typeof value === 'undefined' || value === null) {
         opts.expires = -1;  // invalidate.
       }
       if (timestamp) {
         opts.expires = new Date(timestamp).toUTCString();
       }
+      data = pluginNs.JsonFormat.encode(data);
       return this._setCookie(key, data, opts);
     },
     get: function(key, options) {
@@ -301,7 +313,8 @@
       var exp = new RegExp('(?:^|; )' + encodeURIComponent(key) + '=([^;]*)'),
           result = exp.exec(document.cookie);
       if (result) {
-        var data = (opts.raw ? result[1] : decodeURIComponent(result[1]));
+        var data = decodeURIComponent(result[1]);
+        var data = (opts.raw ? data : pluginNs.JsonFormat.decode(data));
         if (data === 'null') {
           data = null;
         } else if (data === 'true' || data === 'false') {

@@ -16,9 +16,6 @@ buster.testCase("Stone Core", {
   tearDown: function() {
     $(document).data(this.origDocumentData);
   },
-  'stone.version': function() {
-    assert($.stone._version());
-  },
   'stone.defaults': function() {
     var defs = $.stone._defaults();
     assert.isObject(defs);

@@ -13,7 +13,7 @@ buster.testCase("Stone localStorage", {
     this.DEFS = $.stone._defaults();
     this.origDocumentData = $(document).data();
     this.locStorage = $.stone.create({enableEngines: ['localStorage']});
-    this.locUtils = $.stone.availableEngines()['localStorage'];
+    this.locUtils = $.stone._getEngines()['localStorage'];
     this.timestamp = new Date(Date.now() + 86400 * 1000).getTime();
   },
   tearDown: function() {

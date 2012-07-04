@@ -13,7 +13,7 @@ buster.testCase('Stone cookie', {
     this.DEFS = $.stone._defaults();
     this.origDocumentData = $(document).data();
     this.cookieStorage = $.stone.create({enableEngines: ['cookie']});
-    this.cookieUtils = $.stone.availableEngines()['cookie'];
+    this.cookieUtils = $.stone._getEngines()['cookie'];
     this.timestamp = new Date(Date.now() + 86400 * 1000).getTime();
   },
   tearDown: function() {
@@ -60,6 +60,7 @@ buster.testCase('Stone cookie', {
     var ret_F = this.cookieUtils.get('test_F');
     var ret_obj = this.cookieUtils.get('test_obj');
     var ret_arr = this.cookieUtils.get('test_arr');
+    buster.log(T,ret_T,F,ret_F,obj,ret_obj,arr,ret_arr);
     assert.equals(T, ret_T);
     assert.equals(F, ret_F);
     assert.equals(obj, ret_obj);
