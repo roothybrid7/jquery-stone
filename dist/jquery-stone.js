@@ -23,6 +23,7 @@
 //    enableEngines: ['localStorage', 'cookie'],
     enableEngines: [],
     saveStrategy: 'fallback',
+    enableCacheBuffer: true,
     syncBufferLimit: 0,  // 0: realtime[default]
   };
 
@@ -50,6 +51,10 @@
   }
 
   Plugin.prototype = {
+    _getFromBuffer: function(key) {
+      var enableCache = this.options.enableCacheBuffer;
+      return enableCache ? this._buffer[key] : null;
+    },
     init: function() {
       // TODO: initialize.
       var engine = this.options.enableEngines[0];
@@ -66,7 +71,7 @@
           keyPath = this.getDataUrl(key),
           data = null;
       if (keyPath in this._buffer) {
-        data = this._buffer[keyPath];
+        data = this._getFromBuffer(keyPath);
       } else if (this.database) {
         data = this.database.get(keyPath, opts);
       }

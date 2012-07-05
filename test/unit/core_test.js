@@ -22,6 +22,7 @@ buster.testCase("Stone Core", {
     assert.equals('fallback', defs.saveStrategy);
     assert.equals(0, defs.syncBufferLimit);
     assert.equals([], defs.enableEngines);
+    assert.equals(true, defs.enableCacheBuffer);
   },
   'stone.create': {
     'without params': function() {
@@ -40,6 +41,7 @@ buster.testCase("Stone Core", {
     'with params': function() {
       var storeWithParams = $.stone.create({
         dataScheme: '',
+        enableCacheBuffer: false,
         syncBufferLimit: 20,
         saveStrategy: 'all'}),
           defs = storeWithParams._defaults,
@@ -48,6 +50,7 @@ buster.testCase("Stone Core", {
       assert.equals(this.DEFS, defs);
       refute.equals(defs, opts);
       refute.equals(defs.dataScheme, opts.dataScheme);
+      refute.equals(defs.enableCacheBuffer, opts.enableCacheBuffer);
       refute.equals(defs.syncBufferLimit, opts.syncBufferLimit);
       refute.equals(defs.saveStrategy, opts.saveStrategy);
       assert.equals('foo', dataUrl);
